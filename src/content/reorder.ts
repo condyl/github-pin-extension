@@ -70,6 +70,22 @@ function removePinnedSection(section: RepoSection): void {
   existing?.remove();
 }
 
+function getRowSlug(rowEl: Element): string {
+  return (rowEl.getAttribute(ROW_SLUG_ATTR) ?? '').toLowerCase();
+}
+
+function findExistingPinnedRow(listEl: HTMLElement, slug: RepoSlug): HTMLElement | null {
+  const target = slug.toLowerCase();
+  const rows = listEl.querySelectorAll<HTMLElement>(`[${PINNED_ROW_ATTR}="true"]`);
+  for (const row of rows) {
+    if (getRowSlug(row) === target) {
+      return row;
+    }
+  }
+
+  return null;
+}
+
 function findRepoLink(rowEl: HTMLElement): HTMLAnchorElement | null {
   const links = rowEl.querySelectorAll<HTMLAnchorElement>('a[href]');
 
@@ -274,7 +290,30 @@ function cloneRowTemplate(section: RepoSection, slug: RepoSlug): RepoRow {
 }
 
 function syncPinnedRows(listEl: HTMLElement, rows: RepoRow[]): void {
-  listEl.querySelectorAll(`[${PINNED_ROW_ATTR}="true"]`).forEach((row) => row.remove());
+  const targetKeys = rows.map((row) => row.slug.toLowerCase());
+  const targetSet = new Set(targetKeys);
+  const existingPinnedRows = Array.from(
+    listEl.querySelectorAll<HTMLElement>(`[${PINNED_ROW_ATTR}="true"]`)
+  );
+
+  for (const row of existingPinnedRows) {
+    if (!targetSet.has(getRowSlug(row))) {
+      row.remove();
+    }
+  }
+
+  const currentPinnedRows = Array.from(
+    listEl.querySelectorAll<HTMLElement>(`[${PINNED_ROW_ATTR}="true"]`)
+  );
+  const currentKeys = currentPinnedRows.map((row) => getRowSlug(row));
+  const sameOrder =
+    currentKeys.length === targetKeys.length &&
+    currentKeys.every((key, index) => key === targetKeys[index]);
+
+  if (sameOrder) {
+    return;
+  }
+
   for (const row of rows) {
     listEl.appendChild(row.rowEl);
   }
@@ -289,7 +328,21 @@ export function applyPinnedSections(section: RepoSection, pinnedRepos: Set<RepoS
   }
 
   const { listEl } = ensurePinnedSection(section);
-  const pinnedRows = slugs.map((slug) => cloneRowTemplate(section, slug));
+  const pinnedRows = slugs.map((slug) => {
+    const existing = findExistingPinnedRow(listEl, slug);
+    if (existing) {
+      const linkEl = normalizeRowLinks(existing, slug);
+      applyAvatar(existing, section, slug);
+
+      return {
+        slug,
+        rowEl: existing,
+        linkEl
+      };
+    }
+
+    return cloneRowTemplate(section, slug);
+  });
 
   syncPinnedRows(listEl, pinnedRows);
   return pinnedRows;
