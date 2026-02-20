@@ -1,4 +1,11 @@
-import { getPinnedRepos, normalizePinnedRepos, setPinnedRepos, STORAGE_KEY, togglePinnedRepo } from '../src/shared/storage';
+import {
+  getPinnedRepos,
+  normalizePinnedRepos,
+  parsePinnedReposFromRecord,
+  setPinnedRepos,
+  STORAGE_KEY,
+  togglePinnedRepo
+} from '../src/shared/storage';
 
 type StorageValue = Record<string, unknown>;
 
@@ -36,6 +43,14 @@ describe('storage helpers', () => {
       'Foo/Bar',
       'zed/app'
     ]);
+  });
+
+  it('parses pinned repos from raw storage shape', () => {
+    expect(parsePinnedReposFromRecord({})).toEqual([]);
+    expect(parsePinnedReposFromRecord({ [STORAGE_KEY]: { repos: ['Foo/Bar', 'foo/bar'] } })).toEqual([
+      'Foo/Bar'
+    ]);
+    expect(parsePinnedReposFromRecord({ [STORAGE_KEY]: { repos: 'bad' } })).toEqual([]);
   });
 
   it('writes and reads pinned repos', async () => {

@@ -31,7 +31,7 @@ export function normalizePinnedRepos(repos: RepoSlug[]): RepoSlug[] {
   );
 }
 
-function readState(result: Record<string, unknown>): RepoSlug[] {
+export function parsePinnedReposFromRecord(result: Record<string, unknown>): RepoSlug[] {
   const value = result[STORAGE_KEY];
 
   if (!value || typeof value !== 'object') {
@@ -44,6 +44,24 @@ function readState(result: Record<string, unknown>): RepoSlug[] {
   }
 
   return normalizePinnedRepos(state.repos);
+}
+
+async function getPinnedReposFromLocalArea(): Promise<RepoSlug[]> {
+  if (!globalThis.chrome?.storage?.local) {
+    return [];
+  }
+
+  return new Promise((resolve) => {
+    globalThis.chrome.storage.local.get([STORAGE_KEY], (result) => {
+      const error = chrome.runtime.lastError;
+      if (error) {
+        resolve([]);
+        return;
+      }
+
+      resolve(parsePinnedReposFromRecord(result));
+    });
+  });
 }
 
 function readFallbackRepos(): RepoSlug[] {
@@ -80,18 +98,32 @@ function writeFallbackRepos(repos: RepoSlug[]): void {
 export async function getPinnedRepos(): Promise<RepoSlug[]> {
   const storage = getStorageSync();
   if (!storage) {
+    const localRepos = await getPinnedReposFromLocalArea();
+    if (localRepos.length > 0) {
+      return localRepos;
+    }
+
     return readFallbackRepos();
   }
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     storage.get([STORAGE_KEY], (result) => {
       const error = chrome.runtime.lastError;
       if (error) {
-        resolve(readFallbackRepos());
+        getPinnedReposFromLocalArea()
+          .then((localRepos) => {
+            if (localRepos.length > 0) {
+              resolve(localRepos);
+              return;
+            }
+
+            resolve(readFallbackRepos());
+          })
+          .catch(() => resolve(readFallbackRepos()));
         return;
       }
 
-      resolve(readState(result));
+      resolve(parsePinnedReposFromRecord(result));
     });
   });
 }
@@ -105,16 +137,34 @@ export async function setPinnedRepos(repos: RepoSlug[]): Promise<void> {
   };
 
   if (!storage) {
+    if (globalThis.chrome?.storage?.local) {
+      await new Promise<void>((resolve) => {
+        globalThis.chrome.storage.local.set({ [STORAGE_KEY]: state }, () => resolve());
+      });
+    }
     writeFallbackRepos(normalized);
     return;
   }
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     storage.set({ [STORAGE_KEY]: state }, () => {
       const error = chrome.runtime.lastError;
       if (error) {
+        if (globalThis.chrome?.storage?.local) {
+          globalThis.chrome.storage.local.set({ [STORAGE_KEY]: state }, () => {
+            writeFallbackRepos(normalized);
+            resolve();
+          });
+          return;
+        }
+
         writeFallbackRepos(normalized);
         resolve();
+        return;
+      }
+
+      if (globalThis.chrome?.storage?.local) {
+        globalThis.chrome.storage.local.set({ [STORAGE_KEY]: state }, () => resolve());
         return;
       }
 

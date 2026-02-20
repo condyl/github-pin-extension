@@ -3,13 +3,20 @@
   "name": "GitHub Pin",
   "description": "Pin repositories to the top of GitHub's Top repositories list.",
   "version": "0.1.0",
+  "action": {
+    "default_title": "GitHub Pin"
+  },
+  "background": {
+    "service_worker": "dist/background.js",
+    "type": "module"
+  },
   "permissions": ["storage"],
   "host_permissions": ["https://github.com/*"],
   "content_scripts": [
     {
       "matches": ["https://github.com/*"],
       "js": ["dist/content.js"],
-      "css": ["dist/styles.css"],
+      "css": ["dist/github-pin.css"],
       "run_at": "document_idle"
     }
   ]

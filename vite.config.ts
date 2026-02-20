@@ -10,7 +10,12 @@ export default defineConfig({
       formats: ['iife'],
       name: 'GithubPin',
       fileName: () => 'content.js',
-      cssFileName: 'styles'
+      cssFileName: 'github-pin'
+    },
+    rollupOptions: {
+      output: {
+        inlineDynamicImports: true
+      }
     }
   },
   test: {
