@@ -316,3 +316,181 @@ export function renderPinControl(
   const path = button.querySelector<SVGPathElement>('path.github-pin-btn__path');
   path?.setAttribute('d', pinIconPath(pinned));
 }
+
+function createPinSvg(size: string): SVGSVGElement {
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  icon.setAttribute('viewBox', '0 0 24 24');
+  icon.setAttribute('width', size);
+  icon.setAttribute('height', size);
+  icon.setAttribute('fill', 'none');
+  icon.setAttribute('stroke', 'currentColor');
+  icon.setAttribute('stroke-width', '1.5');
+  icon.setAttribute('stroke-linecap', 'round');
+  icon.setAttribute('stroke-linejoin', 'round');
+  icon.classList.add('github-pin-btn__icon');
+
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.classList.add('github-pin-btn__path');
+  path.setAttribute('d', pinIconPath(false));
+  icon.appendChild(path);
+
+  return icon;
+}
+
+export function getCurrentRepoSlug(pathname = window.location.pathname): RepoSlug | null {
+  const parts = pathname.split('/').filter(Boolean);
+  if (parts.length < 2) {
+    return null;
+  }
+
+  return normalizeRepoSlug(`/${parts[0]}/${parts[1]}`);
+}
+
+function findRepoHeaderActionsList(): HTMLUListElement | null {
+  return document.querySelector<HTMLUListElement>(
+    '#repository-details-container ul.pagehead-actions'
+  );
+}
+
+function findWatchListItem(listEl: HTMLUListElement): HTMLLIElement | null {
+  const byTestId = listEl
+    .querySelector<HTMLElement>('[data-testid="notifications-subscriptions-menu-button"]')
+    ?.closest<HTMLLIElement>('li');
+  if (byTestId) {
+    return byTestId;
+  }
+
+  const bySubscription = listEl
+    .querySelector<HTMLElement>('form[action*="/subscription"]')
+    ?.closest<HTMLLIElement>('li');
+  if (bySubscription) {
+    return bySubscription;
+  }
+
+  const candidates = Array.from(listEl.querySelectorAll<HTMLLIElement>('li'));
+  for (const candidate of candidates) {
+    const text = candidate.textContent?.toLowerCase() ?? '';
+    if (text.includes('watch') || text.includes('unwatch')) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function cleanCloneIds(root: Element): void {
+  root.removeAttribute('id');
+  root.removeAttribute('aria-labelledby');
+  root.removeAttribute('aria-controls');
+  root.querySelectorAll('[id]').forEach((el) => el.removeAttribute('id'));
+}
+
+function buildRepoHeaderButtonFromTemplate(template: HTMLButtonElement): HTMLButtonElement {
+  const button = template.cloneNode(true) as HTMLButtonElement;
+  button.type = 'button';
+  button.dataset.githubPinRepoHeader = 'true';
+  button.classList.add('github-pin-repo-btn');
+  button.removeAttribute('data-testid');
+  button.setAttribute('data-loading', 'false');
+  cleanCloneIds(button);
+
+  const content = button.querySelector<HTMLElement>('[data-component="buttonContent"]');
+  const label = button.querySelector<HTMLElement>('[data-component="text"]');
+  const leadingVisual = button.querySelector<HTMLElement>('[data-component="leadingVisual"]');
+  const trailingAction = button.querySelector<HTMLElement>('[data-component="trailingAction"]');
+
+  trailingAction?.remove();
+  button.querySelectorAll('.Counter').forEach((el) => el.remove());
+
+  if (leadingVisual) {
+    leadingVisual.textContent = '';
+    leadingVisual.appendChild(createPinSvg('16'));
+  } else if (content) {
+    content.prepend(createPinSvg('16'));
+  }
+
+  if (!label) {
+    const fallbackLabel = document.createElement('span');
+    fallbackLabel.dataset.component = 'text';
+    fallbackLabel.className = 'github-pin-repo-btn__label';
+    fallbackLabel.textContent = 'Pin';
+    if (content) {
+      content.appendChild(fallbackLabel);
+    } else {
+      button.appendChild(fallbackLabel);
+    }
+  }
+
+  return button;
+}
+
+export function renderRepoHeaderPinButton(
+  slug: RepoSlug,
+  pinned: boolean,
+  onToggle: (slug: RepoSlug) => void,
+  disabled = false
+): void {
+  const listEl = findRepoHeaderActionsList();
+  const watchLi = listEl ? findWatchListItem(listEl) : null;
+  if (!listEl || !watchLi) {
+    document
+      .querySelectorAll<HTMLElement>('button[data-github-pin-repo-header="true"]')
+      .forEach((el) => el.remove());
+    document
+      .querySelectorAll<HTMLElement>('li[data-github-pin-repo-header-item="true"]')
+      .forEach((el) => el.remove());
+    return;
+  }
+
+  let button = document.querySelector<HTMLButtonElement>('button[data-github-pin-repo-header="true"]');
+  let wrapper = document.querySelector<HTMLLIElement>('li[data-github-pin-repo-header-item="true"]');
+  if (!button) {
+    const templateButton =
+      watchLi.querySelector<HTMLButtonElement>('button') ??
+      watchLi.querySelector<HTMLAnchorElement>('a')?.querySelector<HTMLButtonElement>('button') ??
+      null;
+
+    if (!templateButton) {
+      return;
+    }
+
+    button = buildRepoHeaderButtonFromTemplate(templateButton);
+    wrapper = document.createElement('li');
+    wrapper.dataset.githubPinRepoHeaderItem = 'true';
+    wrapper.className = watchLi.className;
+    wrapper.appendChild(button);
+
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (button?.disabled) {
+        return;
+      }
+      onToggle(button?.dataset.repoSlug ?? '');
+    });
+  }
+
+  if (!wrapper) {
+    wrapper = button.closest<HTMLLIElement>('li');
+  }
+
+  if (!wrapper) {
+    return;
+  }
+
+  if (wrapper.parentElement !== listEl || wrapper.nextElementSibling !== watchLi) {
+    listEl.insertBefore(wrapper, watchLi);
+  }
+
+  const label = button.querySelector<HTMLElement>('[data-component="text"], .github-pin-repo-btn__label');
+  if (label) {
+    label.textContent = pinned ? 'Pinned' : 'Pin';
+  }
+
+  button.disabled = disabled;
+  button.dataset.repoSlug = slug;
+  button.setAttribute('aria-pressed', String(pinned));
+  button.setAttribute('aria-label', pinned ? 'Unpin repository' : 'Pin repository');
+  button.title = pinned ? 'Unpin repository' : 'Pin repository';
+  button.classList.toggle('is-pinned', pinned);
+}

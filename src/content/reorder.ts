@@ -274,7 +274,11 @@ function findActionListLink(rowEl: HTMLElement): HTMLAnchorElement | null {
 function normalizeActionListRow(rowEl: HTMLElement, slug: RepoSlug): HTMLAnchorElement {
   const actionLink = findActionListLink(rowEl);
   if (!actionLink) {
-    throw new Error('ActionList row is missing its main link');
+    const fallback = document.createElement('a');
+    fallback.href = `/${slug}`;
+    fallback.textContent = slug;
+    rowEl.appendChild(fallback);
+    return fallback;
   }
 
   actionLink.href = `/${slug}`;

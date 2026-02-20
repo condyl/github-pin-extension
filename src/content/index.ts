@@ -1,5 +1,10 @@
 import '../styles/github-pin.css';
-import { scanTopRepositoriesSection, renderPinControl } from './dom';
+import {
+  getCurrentRepoSlug,
+  renderPinControl,
+  renderRepoHeaderPinButton,
+  scanTopRepositoriesSection
+} from './dom';
 import { applyPinnedSections } from './reorder';
 import { getPinnedRepos, STORAGE_KEY, togglePinnedRepo } from '../shared/storage';
 
@@ -51,9 +56,7 @@ function triggerRecoveryReload(): void {
 
 async function renderSidebar(): Promise<void> {
   const sections = scanTopRepositoriesSection(document);
-  if (sections.length === 0) {
-    return;
-  }
+  const repoSlug = getCurrentRepoSlug();
 
   let pinnedRepos: string[] = [];
   try {
@@ -99,6 +102,41 @@ async function renderSidebar(): Promise<void> {
         false
       );
     }
+  }
+
+  if (repoSlug) {
+    try {
+      renderRepoHeaderPinButton(
+        repoSlug,
+        pinnedSet.has(repoSlug.toLowerCase()),
+        async (slug) => {
+          if (!slug) {
+            return;
+          }
+
+          try {
+            await togglePinnedRepo(slug);
+            await renderSidebar();
+          } catch (error) {
+            if (isContextInvalidatedError(error)) {
+              triggerRecoveryReload();
+              return;
+            }
+
+            // eslint-disable-next-line no-console
+            console.warn('[github-pin] failed to toggle repo header pin', error);
+          }
+        },
+        false
+      );
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.warn('[github-pin] failed to render repo header pin button', error);
+    }
+  } else {
+    document
+      .querySelectorAll<HTMLElement>('button[data-github-pin-repo-header="true"]')
+      .forEach((el) => el.remove());
   }
 
   logDebug('rendered sections', sections.length);
