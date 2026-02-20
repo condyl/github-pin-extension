@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "GitHub Pin",
+  "description": "Pin repositories to the top of GitHub's Top repositories list.",
+  "version": "0.1.0",
+  "permissions": ["storage"],
+  "host_permissions": ["https://github.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://github.com/*"],
+      "js": ["dist/content.js"],
+      "css": ["dist/styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

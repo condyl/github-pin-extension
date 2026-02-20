@@ -1,0 +1,91 @@
+.github-pin-btn {
+  margin-left: 8px;
+  width: 20px;
+  height: 20px;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fgColor-muted, #57606a);
+  cursor: pointer;
+  line-height: 0;
+  vertical-align: middle;
+  opacity: 0.72;
+  transition: opacity 0.12s ease-in-out, color 0.12s ease-in-out, background-color 0.12s ease-in-out;
+}
+
+.github-pin-btn:hover {
+  opacity: 1;
+  color: var(--fgColor-default, #24292f);
+  background: var(--button-default-bgColor-hover, rgba(208, 215, 222, 0.32));
+}
+
+.github-pin-btn:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--focus-outlineColor, #0969da);
+  outline-offset: 1px;
+}
+
+.github-pin-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.github-pin-btn.is-pinned {
+  opacity: 1;
+  color: var(--fgColor-accent, #0969da);
+}
+
+.github-pin-btn__icon {
+  display: block;
+}
+
+.github-pin-btn__path {
+  fill: none;
+  stroke: currentColor;
+}
+
+.github-pin-section {
+  margin: 0 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--borderColor-default, #30363d);
+}
+
+.github-pin-section__title {
+  margin: 0 0 10px;
+}
+
+.github-pin-section [data-github-pin-list='true'] {
+  margin: 0;
+  padding: 0;
+}
+
+.github-pin-enabled-row .width-full.d-flex {
+  position: relative;
+  align-items: flex-start;
+}
+
+.github-pin-enabled-row .wb-break-word {
+  min-width: 0;
+  padding-right: 28px;
+}
+
+.github-pin-enabled-row .wb-break-word a.markdown-title {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.25 !important;
+  margin-bottom: 0 !important;
+}
+
+.github-pin-enabled-row .github-pin-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  flex: 0 0 auto;
+}
