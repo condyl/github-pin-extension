@@ -5,6 +5,7 @@ const PINNED_SECTION_ATTR = 'data-github-pin-section';
 const PINNED_LIST_ATTR = 'data-github-pin-list';
 const PINNED_ROW_ATTR = 'data-github-pin-row';
 const ROW_SLUG_ATTR = 'data-github-pin-slug';
+const PINNED_HEADING_ROW_ATTR = 'data-github-pin-heading-row';
 
 function sortedPinnedSlugs(pinnedRepos: Set<RepoSlug>): RepoSlug[] {
   return [...pinnedRepos].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
@@ -23,6 +24,15 @@ function findHeadingTemplate(section: RepoSection): HTMLElement | null {
   return section.sectionEl.querySelector<HTMLElement>('h1, h2, h3, h4, span, strong');
 }
 
+function findHeadingWrapperTemplate(section: RepoSection): HTMLElement | null {
+  const heading = findHeadingTemplate(section);
+  if (!heading) {
+    return null;
+  }
+
+  return heading.closest<HTMLElement>('li[data-component="GroupHeadingWrap"]');
+}
+
 function buildPinnedHeading(section: RepoSection): HTMLElement {
   const template = findHeadingTemplate(section);
 
@@ -35,9 +45,57 @@ function buildPinnedHeading(section: RepoSection): HTMLElement {
 
   const heading = document.createElement(template.tagName.toLowerCase());
   heading.className = template.className;
-  heading.textContent = 'Pinned repositories';
   heading.setAttribute('data-github-pin-title', 'true');
+
+  const templateDataComponent = template.getAttribute('data-component');
+  if (templateDataComponent) {
+    heading.setAttribute('data-component', templateDataComponent);
+  }
+
+  const titleText = 'Pinned repositories';
+  const templateTitleDiv = template.querySelector(':scope > div');
+  if (templateTitleDiv) {
+    const titleNode = document.createElement('div');
+    titleNode.textContent = titleText;
+    heading.appendChild(titleNode);
+  } else {
+    heading.textContent = titleText;
+  }
+
   return heading;
+}
+
+function isActionListLayout(section: RepoSection): boolean {
+  return section.listEl.className.includes('prc-ActionList-GroupList');
+}
+
+function ensureActionListHeadingRow(section: RepoSection, listEl: HTMLElement): void {
+  let headingRow = listEl.querySelector<HTMLElement>(`[${PINNED_HEADING_ROW_ATTR}="true"]`);
+  if (!headingRow) {
+    const template = findHeadingWrapperTemplate(section);
+    headingRow = document.createElement('li');
+    headingRow.setAttribute(PINNED_HEADING_ROW_ATTR, 'true');
+
+    if (template) {
+      headingRow.className = template.className;
+      const dataVariant = template.getAttribute('data-variant');
+      const dataComponent = template.getAttribute('data-component');
+      if (dataVariant) {
+        headingRow.setAttribute('data-variant', dataVariant);
+      }
+      if (dataComponent) {
+        headingRow.setAttribute('data-component', dataComponent);
+      }
+    } else {
+      headingRow.className = 'prc-ActionList-GroupHeadingWrap-laXcX';
+      headingRow.setAttribute('data-variant', 'subtle');
+      headingRow.setAttribute('data-component', 'GroupHeadingWrap');
+    }
+  }
+
+  headingRow.textContent = '';
+  headingRow.appendChild(buildPinnedHeading(section));
+  listEl.prepend(headingRow);
 }
 
 function ensurePinnedSection(section: RepoSection): { container: HTMLElement; listEl: HTMLElement } {
@@ -45,6 +103,9 @@ function ensurePinnedSection(section: RepoSection): { container: HTMLElement; li
   let listEl = container?.querySelector<HTMLElement>(`[${PINNED_LIST_ATTR}="true"]`) ?? null;
 
   if (container && listEl) {
+    if (isActionListLayout(section)) {
+      ensureActionListHeadingRow(section, listEl);
+    }
     return { container, listEl };
   }
 
@@ -52,13 +113,16 @@ function ensurePinnedSection(section: RepoSection): { container: HTMLElement; li
   container.setAttribute(PINNED_SECTION_ATTR, 'true');
   container.className = 'github-pin-section';
 
-  const heading = buildPinnedHeading(section);
-
   listEl = document.createElement(section.listEl.tagName.toLowerCase());
   listEl.setAttribute(PINNED_LIST_ATTR, 'true');
   listEl.className = section.listEl.className;
 
-  container.appendChild(heading);
+  if (isActionListLayout(section)) {
+    ensureActionListHeadingRow(section, listEl);
+  } else {
+    container.appendChild(buildPinnedHeading(section));
+  }
+
   container.appendChild(listEl);
   section.sectionEl.parentElement?.insertBefore(container, section.sectionEl);
 
