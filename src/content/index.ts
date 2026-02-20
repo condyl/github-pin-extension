@@ -69,9 +69,10 @@ async function renderSidebar(): Promise<void> {
   }
 
   const pinnedSet = new Set(pinnedRepos.map((repo) => repo.toLowerCase()));
+  const pinnedDisplaySet = new Set(pinnedRepos);
 
   for (const section of sections) {
-    applyPinnedSections(section, pinnedSet);
+    applyPinnedSections(section, pinnedDisplaySet);
 
     for (const row of section.rows) {
       renderPinControl(

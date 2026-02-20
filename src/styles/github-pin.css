@@ -89,3 +89,34 @@
   top: 0;
   flex: 0 0 auto;
 }
+
+.github-pin-enabled-row {
+  position: relative;
+}
+
+.github-pin-enabled-row > a.prc-ActionList-ActionListContent-KBb8- {
+  padding-right: 34px;
+}
+
+.github-pin-enabled-row
+  > a.prc-ActionList-ActionListContent-KBb8-
+  .prc-ActionList-ActionListSubContent-gKsFp {
+  min-width: 0;
+}
+
+.github-pin-enabled-row
+  > a.prc-ActionList-ActionListContent-KBb8-
+  .prc-ActionList-ItemLabel-81ohH {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.github-pin-enabled-row > .github-pin-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}

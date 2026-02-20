@@ -187,7 +187,38 @@ function ensureBreakWordContainer(rowEl: HTMLElement): HTMLElement {
   return fallback;
 }
 
+function findActionListLink(rowEl: HTMLElement): HTMLAnchorElement | null {
+  return rowEl.querySelector<HTMLAnchorElement>('a.prc-ActionList-ActionListContent-KBb8-');
+}
+
+function normalizeActionListRow(rowEl: HTMLElement, slug: RepoSlug): HTMLAnchorElement {
+  const actionLink = findActionListLink(rowEl);
+  if (!actionLink) {
+    throw new Error('ActionList row is missing its main link');
+  }
+
+  actionLink.href = `/${slug}`;
+  const labelEl = actionLink.querySelector<HTMLElement>('.prc-ActionList-ItemLabel-81ohH');
+  if (labelEl) {
+    labelEl.textContent = slug;
+  }
+
+  rowEl.querySelectorAll('.wb-break-word').forEach((el) => el.remove());
+  rowEl.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((link) => {
+    if (link !== actionLink && normalizeRepoSlug(link.getAttribute('href') ?? '')) {
+      link.remove();
+    }
+  });
+
+  return actionLink;
+}
+
 function normalizeRowLinks(rowEl: HTMLElement, slug: RepoSlug): HTMLAnchorElement {
+  const actionListLink = findActionListLink(rowEl);
+  if (actionListLink) {
+    return normalizeActionListRow(rowEl, slug);
+  }
+
   const avatarLink = findAvatarLink(rowEl);
   if (avatarLink) {
     avatarLink.href = `/${slug}`;
