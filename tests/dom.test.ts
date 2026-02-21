@@ -1,4 +1,4 @@
-import { normalizeRepoSlug, scanTopRepositoriesSection } from '../src/content/dom';
+import { normalizeRepoSlug, renderPinControl, scanTopRepositoriesSection } from '../src/content/dom';
 
 describe('normalizeRepoSlug', () => {
   it('parses relative repo links', () => {
@@ -75,5 +75,33 @@ describe('scanTopRepositoriesSection', () => {
     const sections = scanTopRepositoriesSection(document);
     expect(sections).toHaveLength(1);
     expect(sections[0]?.rows.map((row) => row.slug)).toEqual(['octo/one', 'octo/two']);
+  });
+});
+
+describe('renderPinControl', () => {
+  it('updates the icon path when pin state changes', () => {
+    document.body.innerHTML = `
+      <li>
+        <div class="wb-break-word">
+          <a href="/octocat/hello-world">octocat/hello-world</a>
+        </div>
+      </li>
+    `;
+
+    const rowEl = document.querySelector('li') as HTMLElement;
+    const linkEl = rowEl.querySelector('a') as HTMLAnchorElement;
+    const onToggle = () => {
+      return;
+    };
+
+    renderPinControl({ slug: 'octocat/hello-world', rowEl, linkEl }, false, onToggle);
+    const unpinnedPath = rowEl.querySelector('path.github-pin-btn__path')?.getAttribute('d');
+
+    renderPinControl({ slug: 'octocat/hello-world', rowEl, linkEl }, true, onToggle);
+    const pinnedPath = rowEl.querySelector('path.github-pin-btn__path')?.getAttribute('d');
+
+    expect(unpinnedPath).toBeTruthy();
+    expect(pinnedPath).toBeTruthy();
+    expect(unpinnedPath).not.toEqual(pinnedPath);
   });
 });
