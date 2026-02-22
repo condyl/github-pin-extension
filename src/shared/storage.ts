@@ -46,6 +46,10 @@ export function parsePinnedReposFromRecord(result: Record<string, unknown>): Rep
   return normalizePinnedRepos(state.repos);
 }
 
+function hasStorageState(result: Record<string, unknown>): boolean {
+  return Object.prototype.hasOwnProperty.call(result, STORAGE_KEY);
+}
+
 async function getPinnedReposFromLocalArea(): Promise<RepoSlug[]> {
   if (!globalThis.chrome?.storage?.local) {
     return [];
@@ -123,7 +127,22 @@ export async function getPinnedRepos(): Promise<RepoSlug[]> {
         return;
       }
 
-      resolve(parsePinnedReposFromRecord(result));
+      const syncRepos = parsePinnedReposFromRecord(result);
+      if (syncRepos.length > 0 || hasStorageState(result)) {
+        resolve(syncRepos);
+        return;
+      }
+
+      getPinnedReposFromLocalArea()
+        .then((localRepos) => {
+          if (localRepos.length > 0) {
+            resolve(localRepos);
+            return;
+          }
+
+          resolve(readFallbackRepos());
+        })
+        .catch(() => resolve(readFallbackRepos()));
     });
   });
 }

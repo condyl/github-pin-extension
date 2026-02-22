@@ -11,14 +11,23 @@ type StorageValue = Record<string, unknown>;
 
 describe('storage helpers', () => {
   let store: StorageValue;
+  let localStore: StorageValue;
 
   beforeEach(() => {
     store = {};
+    localStore = {};
 
     const sync = {
       get: (_keys: string[], cb: (result: StorageValue) => void) => cb(store),
       set: (value: StorageValue, cb: () => void) => {
         store = { ...store, ...value };
+        cb();
+      }
+    };
+    const local = {
+      get: (_keys: string[], cb: (result: StorageValue) => void) => cb(localStore),
+      set: (value: StorageValue, cb: () => void) => {
+        localStore = { ...localStore, ...value };
         cb();
       }
     };
@@ -28,6 +37,7 @@ describe('storage helpers', () => {
     (globalThis as unknown as { chrome: chrome }).chrome = {
       storage: {
         sync,
+        local,
         onChanged: {
           addListener: () => {
             return;
@@ -68,5 +78,11 @@ describe('storage helpers', () => {
 
     await togglePinnedRepo('foo/bar');
     await expect(getPinnedRepos()).resolves.toEqual(['ant/project']);
+  });
+
+  it('falls back to local storage when sync state is missing', async () => {
+    localStore[STORAGE_KEY] = { repos: ['local/only', 'zed/app'], updatedAt: Date.now() };
+
+    await expect(getPinnedRepos()).resolves.toEqual(['local/only', 'zed/app']);
   });
 });
