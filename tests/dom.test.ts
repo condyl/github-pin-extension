@@ -1,4 +1,5 @@
 import { normalizeRepoSlug, renderPinControl, scanTopRepositoriesSection } from '../src/content/dom';
+import { vi } from 'vitest';
 
 describe('normalizeRepoSlug', () => {
   it('parses relative repo links', () => {
@@ -95,13 +96,40 @@ describe('renderPinControl', () => {
     };
 
     renderPinControl({ slug: 'octocat/hello-world', rowEl, linkEl }, false, onToggle);
-    const unpinnedPath = rowEl.querySelector('path.github-pin-btn__path')?.getAttribute('d');
+    const unpinnedPaths = Array.from(
+      rowEl.querySelectorAll('path.github-pin-btn__path'),
+      (path) => path.getAttribute('d') ?? ''
+    );
 
     renderPinControl({ slug: 'octocat/hello-world', rowEl, linkEl }, true, onToggle);
-    const pinnedPath = rowEl.querySelector('path.github-pin-btn__path')?.getAttribute('d');
+    const pinnedPaths = Array.from(
+      rowEl.querySelectorAll('path.github-pin-btn__path'),
+      (path) => path.getAttribute('d') ?? ''
+    );
 
-    expect(unpinnedPath).toBeTruthy();
-    expect(pinnedPath).toBeTruthy();
-    expect(unpinnedPath).not.toEqual(pinnedPath);
+    expect(unpinnedPaths.length).toBeGreaterThan(0);
+    expect(pinnedPaths.length).toBeGreaterThan(0);
+    expect(unpinnedPaths).not.toEqual(pinnedPaths);
+  });
+
+  it('calls onToggle with the row slug on click', () => {
+    document.body.innerHTML = `
+      <li>
+        <div class="wb-break-word">
+          <a href="/octocat/hello-world">octocat/hello-world</a>
+        </div>
+      </li>
+    `;
+
+    const rowEl = document.querySelector('li') as HTMLElement;
+    const linkEl = rowEl.querySelector('a') as HTMLAnchorElement;
+    const onToggle = vi.fn();
+
+    renderPinControl({ slug: 'octocat/hello-world', rowEl, linkEl }, false, onToggle);
+
+    const button = rowEl.querySelector('button[data-github-pin-control="true"]') as HTMLButtonElement;
+    button.click();
+
+    expect(onToggle).toHaveBeenCalledWith('octocat/hello-world');
   });
 });

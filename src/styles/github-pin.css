@@ -41,6 +41,7 @@
 
 .github-pin-btn__icon {
   display: block;
+  overflow: visible;
 }
 
 .github-pin-btn__path {

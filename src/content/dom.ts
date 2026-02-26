@@ -245,7 +245,7 @@ function pinIconPath(pinned: boolean): string {
     return 'M12 17v5 M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z';
   }
 
-  return 'M12 17v5 M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z M5 5l14 14';
+  return 'M12 17v5 M15 9.34V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H7.89 M2 2l20 20 M9 9v1.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h11';
 }
 
 export function renderPinControl(
@@ -272,13 +272,14 @@ export function renderPinControl(
     icon.setAttribute('height', '16');
     icon.setAttribute('fill', 'none');
     icon.setAttribute('stroke', 'currentColor');
-    icon.setAttribute('stroke-width', '1.5');
+    icon.setAttribute('stroke-width', '2');
     icon.setAttribute('stroke-linecap', 'round');
     icon.setAttribute('stroke-linejoin', 'round');
     icon.classList.add('github-pin-btn__icon');
 
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.classList.add('github-pin-btn__path');
+    path.setAttribute('d', pinIconPath(false));
     icon.appendChild(path);
 
     button.appendChild(icon);
@@ -317,21 +318,21 @@ export function renderPinControl(
   path?.setAttribute('d', pinIconPath(pinned));
 }
 
-function createPinSvg(size: string): SVGSVGElement {
+function createPinSvg(size: string, pinned = false): SVGSVGElement {
   const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   icon.setAttribute('viewBox', '0 0 24 24');
   icon.setAttribute('width', size);
   icon.setAttribute('height', size);
   icon.setAttribute('fill', 'none');
   icon.setAttribute('stroke', 'currentColor');
-  icon.setAttribute('stroke-width', '1.5');
+  icon.setAttribute('stroke-width', '2');
   icon.setAttribute('stroke-linecap', 'round');
   icon.setAttribute('stroke-linejoin', 'round');
   icon.classList.add('github-pin-btn__icon');
 
   const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   path.classList.add('github-pin-btn__path');
-  path.setAttribute('d', pinIconPath(false));
+  path.setAttribute('d', pinIconPath(pinned));
   icon.appendChild(path);
 
   return icon;
@@ -493,4 +494,6 @@ export function renderRepoHeaderPinButton(
   button.setAttribute('aria-label', pinned ? 'Unpin repository' : 'Pin repository');
   button.title = pinned ? 'Unpin repository' : 'Pin repository';
   button.classList.toggle('is-pinned', pinned);
+  const path = button.querySelector<SVGPathElement>('path.github-pin-btn__path');
+  path?.setAttribute('d', pinIconPath(pinned));
 }
